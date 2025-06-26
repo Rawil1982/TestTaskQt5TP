@@ -1,7 +1,7 @@
 #ifndef DATABASEFACTORY_H
 #define DATABASEFACTORY_H
 
-#include "idatabase.h"
+#include "headers/interfaces/idatabase.h"
 #include <memory>
 
 class DatabaseFactory {

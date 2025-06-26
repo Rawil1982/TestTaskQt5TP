@@ -17,25 +17,40 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     main.cpp \
-    src/commands.cpp \
     src/countermanager.cpp \
     src/countersmodel.cpp \
     src/databasefactory.cpp \
     src/databaseworker.cpp \
     src/incrementworker.cpp \
     src/mainwindow.cpp \
-    src/sqlitedatabase.cpp
+    src/sqlitedatabase.cpp \
+    src/sqlitedatabaseinitializer.cpp \
+    src/simpleincrementstrategy.cpp \
+    src/workermanager.cpp \
+    src/commands/addcommand.cpp \
+    src/commands/removecommand.cpp \
+    src/commands/savecommand.cpp
 
 HEADERS += \
-    headers/commands.h \
     headers/countermanager.h \
     headers/countersmodel.h \
     headers/databasefactory.h \
     headers/databaseworker.h \
-    headers/idatabase.h \
     headers/incrementworker.h \
     headers/mainwindow.h \
-    headers/sqlitedatabase.h
+    headers/simpleincrementstrategy.h \
+    headers/sqlitedatabase.h \
+    headers/sqlitedatabaseinitializer.h \
+    headers/workermanager.h \
+    headers/interfaces/idatabase.h \
+    headers/interfaces/idatabaseinitializer.h \
+    headers/interfaces/iincrementstrategy.h \
+    headers/interfaces/iworker.h \
+    headers/interfaces/iworkermanager.h \
+    headers/commands/icommand.h \
+    headers/commands/addcommand.h \
+    headers/commands/removecommand.h \
+    headers/commands/savecommand.h
 
 FORMS += \
     uis/mainwindow.ui

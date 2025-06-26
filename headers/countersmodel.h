@@ -2,7 +2,9 @@
 #define COUNTERSMODEL_H
 
 #include <QAbstractTableModel>
-#include "countermanager.h"
+
+// Forward declarations
+class CounterManager;
 
 class CountersModel : public QAbstractTableModel {
     Q_OBJECT

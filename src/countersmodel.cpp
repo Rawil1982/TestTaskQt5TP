@@ -1,5 +1,6 @@
 #include "headers/countersmodel.h"
-#include "headers/idatabase.h"
+#include "headers/countermanager.h"
+#include "headers/interfaces/idatabase.h"
 
 CountersModel::CountersModel(CounterManager& manager, QObject *parent)
     : QAbstractTableModel(parent), m_counterManager(manager) {}

@@ -1,54 +1,61 @@
 #include "headers/sqlitedatabase.h"
+#include "headers/interfaces/idatabaseinitializer.h"
+#include "headers/sqlitedatabaseinitializer.h"
+#include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
-#include <QThread>
-#include <utility> 
-SQLiteDatabase::SQLiteDatabase(QString  databaseName)
-    : m_databaseName(std::move(databaseName))
-{
+#include <thread>
+#include <utility>
+#include <sstream>
+#include <iomanip>
 
+thread_local std::unique_ptr<SQLiteDatabase::ThreadLocalDB> SQLiteDatabase::m_threadLocalDB;
+
+SQLiteDatabase::SQLiteDatabase(QString databaseName, 
+                               std::unique_ptr<IDatabaseInitializer> initializer)
+    : m_databaseName(std::move(databaseName))
+    , m_initializer(std::move(initializer)) {
+    if (!m_initializer) {
+        m_initializer = std::make_unique<SQLiteDatabaseInitializer>();
+    }
 }
 
 void SQLiteDatabase::initializeDB(QSqlDatabase& db) {
     if (db.isOpen()) return;
 
-    QString connectionName = QObject::tr("conn_%1").arg(reinterpret_cast<quintptr>(QThread::currentThread()));
-    db = QSqlDatabase::addDatabase("QSQLITE", connectionName);
-    db.setDatabaseName(m_databaseName);
-
-    if (!db.open()) {
-        qCritical() << QObject::tr("Thread [ 0x%0 ] Database open error:").arg(reinterpret_cast<quintptr>(QThread::currentThread()), 0, 16)
-                    << db.lastError().text();
+    if (!m_initializer->initialize(db, m_databaseName)) {
         return;
     }
 
-    qDebug() << QObject::tr("Thread [ 0x%0 ] Database opened successfully").arg(reinterpret_cast<quintptr>(QThread::currentThread()), 0, 16);
-
-    // Создаем таблицу
-    QSqlQuery query(db);
-    QString createTable = "CREATE TABLE IF NOT EXISTS counters ("
-                          "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                          "value INTEGER NOT NULL)";
-
-    if (!query.exec(createTable)) {
-        qCritical() << QObject::tr("Thread [ 0x%0 ]  Create table error:").arg(reinterpret_cast<quintptr>(QThread::currentThread()), 0, 16)
-                    << query.lastError().text();
+    if (!m_initializer->createTables(db)) {
+        return;
     }
 }
 
-std::vector<int> SQLiteDatabase::loadCounters() {
-    if (!m_threadStorage.hasLocalData()) {
-        m_threadStorage.setLocalData(new ThreadLocalDB());
+SQLiteDatabase::ThreadLocalDB* SQLiteDatabase::getThreadLocalDB() {
+    if (!m_threadLocalDB) {
+        m_threadLocalDB = std::make_unique<ThreadLocalDB>();
     }
+    return m_threadLocalDB.get();
+}
 
-    ThreadLocalDB* localDB = m_threadStorage.localData();
+bool SQLiteDatabase::ensureDatabaseOpen(ThreadLocalDB* localDB) {
+    if (!localDB->db.isOpen()) {
+        qCritical() << QObject::tr("Database not open in thread") << m_initializer->getConnectionName();
+        return false;
+    }
+    return true;
+}
+
+std::vector<int> SQLiteDatabase::loadCounters() {
+    ThreadLocalDB* localDB = getThreadLocalDB();
     initializeDB(localDB->db);
 
-    if (!localDB->db.isOpen()) {
-        qCritical() << QObject::tr("Database not open in thread") << QThread::currentThread();
-        return {}; // Или выполнить повторную инициализацию
+    if (!ensureDatabaseOpen(localDB)) {
+        return {};
     }
+
     std::vector<int> counters;
     QSqlQuery query("SELECT value FROM counters", localDB->db);
     while (query.next()) {
@@ -58,16 +65,11 @@ std::vector<int> SQLiteDatabase::loadCounters() {
 }
 
 void SQLiteDatabase::saveCounters(const std::vector<int>& counters) {
-    if (!m_threadStorage.hasLocalData()) {
-        m_threadStorage.setLocalData(new ThreadLocalDB());
-    }
-
-    ThreadLocalDB* localDB = m_threadStorage.localData();
+    ThreadLocalDB* localDB = getThreadLocalDB();
     initializeDB(localDB->db);
 
-    if (!localDB->db.isOpen()) {
-        qCritical() << QObject::tr("Database not open in thread") << QThread::currentThread();
-        return; // Или выполнить повторную инициализацию
+    if (!ensureDatabaseOpen(localDB)) {
+        return;
     }
 
     QSqlQuery query(localDB->db);

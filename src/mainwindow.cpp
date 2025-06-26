@@ -1,68 +1,98 @@
 #include "headers/mainwindow.h"
 #include "ui_mainwindow.h"
-#include "headers/commands.h"
+#include "headers/commands/savecommand.h"
+#include "headers/interfaces/idatabase.h"
+#include "headers/databaseworker.h"
+#include "headers/countermanager.h"
+#include "headers/countersmodel.h"
+#include "headers/workermanager.h"
+#include "headers/simpleincrementstrategy.h"
 #include <QMessageBox>
 #include <QDateTime>
 #include <QHeaderView>
+#include <QDebug>
+#include <QTimer>
+#include <algorithm>
+#include <QModelIndexList>
+#include <QPushButton>
+#include <QItemSelectionModel>
+#include <QHeaderView>
+#include <QTableView>
+#include <QLabel>
+#include <QModelIndex>
+#include <QModelIndexList>
 
 MainWindow::MainWindow(std::unique_ptr<IDatabase> database, QWidget *parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
-      m_database(std::move(database)),
+      m_counterManager(std::make_unique<SimpleIncrementStrategy>()),
       m_countersModel(m_counterManager, this) {
 
     ui->setupUi(this);
-
-    // Настройка таблицы
-    ui->tableView->setModel(&m_countersModel);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-
-    // Настройка потоков
-    setupWorkers();
-
-    // Настройка команд
-    connect(ui->addButton, &QPushButton::clicked, this, &MainWindow::addCounter);
-    connect(ui->removeButton, &QPushButton::clicked, this, &MainWindow::removeCounter);
-    connect(ui->saveButton, &QPushButton::clicked, this, &MainWindow::saveCounters);
-
-    // Настройка таймеров
+    
+    setupUI();
+    setupWorkers(std::move(database));
     setupTimers();
+    setupConnections();
 
-    // Инициализация времени
     m_lastTime = QDateTime::currentMSecsSinceEpoch();
     m_lastSum = m_counterManager.getSum();
 }
 
 MainWindow::~MainWindow() {
-    if (m_incrementWorker) m_incrementWorker->stop();
-    if (m_dbWorker) m_dbWorker->stop();
-//   SaveCommand(countersModel, *dbWorker).execute(); //Не знаю надо или нет. Если надо, нужно блочить выход с мес. боксом.
+    if (m_workerManager) {
+        m_workerManager->stopAll();
+    }
 }
 
-void MainWindow::setupWorkers() {
-    // Поток для работы с БД
-    m_dbWorker = std::make_unique<DatabaseWorker>(std::move(m_database));
-    connect(m_dbWorker.get(), &DatabaseWorker::countersLoaded,
-            this, &MainWindow::onCountersLoaded);
-    connect(m_dbWorker.get(), &DatabaseWorker::countersSaved,
-            this, &MainWindow::onCountersSaved);
-    m_dbWorker->start();
+void MainWindow::setupUI() {
+    ui->tableView->setModel(&m_countersModel);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+}
 
-    // Задержка перед загрузкой, чтобы поток успел инициализироваться
+void MainWindow::setupWorkers(std::unique_ptr<IDatabase> database) {
+    m_workerManager = std::make_unique<WorkerManager>(m_counterManager, std::move(database));
+    
+    connect(m_workerManager.get(), &IWorkerManager::allWorkersStarted,
+            this, &MainWindow::onAllWorkersStarted);
+    connect(m_workerManager.get(), &IWorkerManager::allWorkersStopped,
+            this, &MainWindow::onAllWorkersStopped);
+    connect(m_workerManager.get(), &IWorkerManager::workerError,
+            this, &MainWindow::onWorkerError);
+    
+    auto dbWorker = dynamic_cast<DatabaseWorker*>(m_workerManager->getDatabaseWorker());
+    if (dbWorker) {
+        connect(dbWorker, &DatabaseWorker::countersLoaded,
+                this, &MainWindow::onCountersLoaded);
+        connect(dbWorker, &DatabaseWorker::countersSaved,
+                this, &MainWindow::onCountersSaved);
+    }
+    
+    auto incWorker = m_workerManager->getIncrementWorker();
+    if (incWorker) {
+        connect(incWorker, &IWorker::dataChanged,
+                &m_countersModel, &CountersModel::refreshData);
+    }
+    
+    m_workerManager->startAll();
+    
     QTimer::singleShot(pauseBeforeLoad, [this]() {
-        m_dbWorker->loadCounters();
+        auto dbWorker = dynamic_cast<DatabaseWorker*>(m_workerManager->getDatabaseWorker());
+        if (dbWorker) {
+            dbWorker->loadCounters();
+        }
     });
-
-    // Поток для инкрементирования
-    m_incrementWorker = std::make_unique<IncrementWorker>(m_counterManager);
-    connect(m_incrementWorker.get(), &IncrementWorker::dataChanged,
-            &m_countersModel, &CountersModel::refreshData);
-    m_incrementWorker->start();
 }
 
 void MainWindow::setupTimers() {
     connect(&m_frequencyTimer, &QTimer::timeout, this, &MainWindow::updateFrequency);
-    m_frequencyTimer.start(updatePeriod); // Обновление частоты 1 раз в секунду.
+    m_frequencyTimer.start(updatePeriod);
+}
+
+void MainWindow::setupConnections() {
+    connect(ui->addButton, &QPushButton::clicked, this, &MainWindow::addCounter);
+    connect(ui->removeButton, &QPushButton::clicked, this, &MainWindow::removeCounter);
+    connect(ui->saveButton, &QPushButton::clicked, this, &MainWindow::saveCounters);
 }
 
 void MainWindow::addCounter() {
@@ -73,7 +103,6 @@ void MainWindow::removeCounter() {
     QModelIndexList selected = ui->tableView->selectionModel()->selectedRows();
     if (selected.isEmpty()) return;
 
-    // Сортируем в обратном порядке
     std::vector<int> rows;
     for (const auto& index : selected) {
         rows.push_back(index.row());
@@ -86,7 +115,10 @@ void MainWindow::removeCounter() {
 }
 
 void MainWindow::saveCounters() {
-    SaveCommand(m_countersModel, *m_dbWorker).execute();
+    auto dbWorker = dynamic_cast<DatabaseWorker*>(m_workerManager->getDatabaseWorker());
+    if (dbWorker) {
+        SaveCommand(m_countersModel, *dbWorker).execute();
+    }
 }
 
 void MainWindow::updateFrequency() {
@@ -112,4 +144,17 @@ void MainWindow::onCountersLoaded(const std::vector<int>& counters) {
 
 void MainWindow::onCountersSaved() {
     QMessageBox::information(this, tr("Сохранение"), tr("Данные сохранены в БД"));
+}
+
+void MainWindow::onWorkerError(const QString& workerName, const QString& errorMessage) {
+    QMessageBox::warning(this, tr("Ошибка воркера"), 
+                        tr("Ошибка в %1: %2").arg(workerName, errorMessage));
+}
+
+void MainWindow::onAllWorkersStarted() {
+    qDebug() << "All workers started successfully";
+}
+
+void MainWindow::onAllWorkersStopped() {
+    qDebug() << "All workers stopped";
 }

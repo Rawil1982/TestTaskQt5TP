@@ -1,14 +1,21 @@
 #ifndef SQLITEDATABASE_H
 #define SQLITEDATABASE_H
 
-#include "idatabase.h"
-#include <QSqlDatabase>
+#include "headers/interfaces/idatabase.h"
+#include "headers/interfaces/idatabaseinitializer.h"
 #include <QString>
-#include <QThreadStorage>
+#include <thread>
+#include <memory>
+#include <QSqlDatabase>
+
+// Forward declarations
+class QSqlDatabase;
 
 class SQLiteDatabase : public IDatabase {
 public:
-    explicit SQLiteDatabase(QString  m_databaseName);
+    explicit SQLiteDatabase(QString databaseName, 
+                           std::unique_ptr<IDatabaseInitializer> initializer = nullptr);
+    ~SQLiteDatabase() override = default;
 
     std::vector<int> loadCounters() override;
     void saveCounters(const std::vector<int>& counters) override;
@@ -20,9 +27,12 @@ private:
     };
 
     void initializeDB(QSqlDatabase& db);
+    ThreadLocalDB* getThreadLocalDB();
+    bool ensureDatabaseOpen(ThreadLocalDB* localDB);
 
     QString m_databaseName;
-    QThreadStorage<ThreadLocalDB*> m_threadStorage;
+    std::unique_ptr<IDatabaseInitializer> m_initializer;
+    static thread_local std::unique_ptr<ThreadLocalDB> m_threadLocalDB;
 };
 
 #endif // SQLITEDATABASE_H

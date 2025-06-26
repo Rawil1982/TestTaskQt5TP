@@ -1,24 +1,25 @@
 #ifndef INCREMENTWORKER_H
 #define INCREMENTWORKER_H
 
+#include "headers/interfaces/iworker.h"
 #include <thread>
 #include <atomic>
 #include <chrono>
 #include <QObject>
-#include "countermanager.h"
 
-class IncrementWorker : public QObject {
+// Forward declarations
+class CounterManager;
+
+class IncrementWorker : public IWorker {
     Q_OBJECT
 
 public:
     explicit IncrementWorker(CounterManager& manager, QObject* parent = nullptr);
-    ~IncrementWorker();
+    ~IncrementWorker() override;
 
-    void start();
-    void stop();
-
-signals:
-    void dataChanged();
+    void start() override;
+    void stop() override;
+    bool isRunning() const override;
 
 private:
     void run();

@@ -1,9 +1,9 @@
 #include "headers/databaseworker.h"
+#include "headers/interfaces/idatabase.h"
 #include <QMetaType>
 
 DatabaseWorker::DatabaseWorker(std::unique_ptr<IDatabase> database)
     : m_database(std::move(database)), m_running(false) {
-    // Регистрируем тип для межпоточных сгиналов/слотов. По идее, надо перенести в какой-нибудь RegisterMetatypesManager
     qRegisterMetaType<std::vector<int>>("std::vector<int>");
 }
 
@@ -15,6 +15,7 @@ void DatabaseWorker::start() {
     if (m_running) return;
     m_running = true;
     m_workerThread = std::thread(&DatabaseWorker::run, this);
+    emit started();
 }
 
 void DatabaseWorker::stop() {
@@ -29,19 +30,32 @@ void DatabaseWorker::stop() {
     if (m_workerThread.joinable()) {
         m_workerThread.join();
     }
+    emit stopped();
+}
+
+bool DatabaseWorker::isRunning() const {
+    return m_running;
 }
 
 void DatabaseWorker::loadCounters() {
     addTask([this]() {
-        auto counters = m_database->loadCounters();
-        emit countersLoaded(counters);
+        try {
+            auto counters = m_database->loadCounters();
+            emit countersLoaded(counters);
+        } catch (const std::exception& e) {
+            emit error(QString("Load counters error: %1").arg(e.what()));
+        }
     });
 }
 
 void DatabaseWorker::saveCounters(const std::vector<int>& counters) {
     addTask([this, counters]() {
-        m_database->saveCounters(counters);
-        emit countersSaved();
+        try {
+            m_database->saveCounters(counters);
+            emit countersSaved();
+        } catch (const std::exception& e) {
+            emit error(QString("Save counters error: %1").arg(e.what()));
+        }
     });
 }
 
@@ -65,10 +79,5 @@ void DatabaseWorker::run() {
         lock.unlock();
 
         task();
-    }
-    // Закрываем все соединения этого потока
-    if (m_database) {
-        // Для SQLiteDatabase это происходит автоматически,
-        // но можно добавить явный метод очистки
     }
 }

@@ -10,4 +10,4 @@ public:
     virtual void saveCounters(const std::vector<int>& counters) = 0;
 };
 
-#endif // IDATABASE_H
+#endif 

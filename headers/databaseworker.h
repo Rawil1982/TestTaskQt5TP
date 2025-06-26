@@ -1,24 +1,29 @@
 #ifndef DATABASEWORKER_H
 #define DATABASEWORKER_H
 
-#include <QObject>
+#include "headers/interfaces/iworker.h"
 #include <thread>
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
 #include <queue>
 #include <functional>
-#include "idatabase.h"
+#include <vector>
 
-class DatabaseWorker : public QObject {
+// Forward declarations
+class IDatabase;
+
+class DatabaseWorker : public IWorker {
     Q_OBJECT
 
 public:
-    explicit DatabaseWorker(std::unique_ptr<IDatabase> m_database);
-    ~DatabaseWorker();
+    explicit DatabaseWorker(std::unique_ptr<IDatabase> database);
+    ~DatabaseWorker() override;
 
-    void start();
-    void stop();
+    void start() override;
+    void stop() override;
+    bool isRunning() const override;
+    
     void loadCounters();
     void saveCounters(const std::vector<int>& counters);
 
