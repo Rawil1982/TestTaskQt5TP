@@ -11,7 +11,7 @@ RemoveCommand::RemoveCommand(CounterManager& manager, CountersModel& model, QIte
 
 void RemoveCommand::execute() {
     if (!m_selection) return;
-    QModelIndexList selected = m_selection->selectedRows();
+    const QModelIndexList selected = m_selection->selectedRows();
     if (selected.isEmpty()) return;
 
     std::vector<int> rows;

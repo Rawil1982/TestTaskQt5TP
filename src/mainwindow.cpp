@@ -99,7 +99,7 @@ void MainWindow::addCounter() {
 }
 
 void MainWindow::removeCounter() {
-    QModelIndexList selected = ui->tableView->selectionModel()->selectedRows();
+    const QModelIndexList selected = ui->tableView->selectionModel()->selectedRows();
     if (selected.isEmpty()) return;
 
     std::vector<int> rows;
