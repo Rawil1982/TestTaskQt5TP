@@ -15,6 +15,8 @@ class SQLiteDatabase : public IDatabase {
 public:
     explicit SQLiteDatabase(QString databaseName, 
                            std::unique_ptr<IDatabaseInitializer> initializer = nullptr);
+
+    // IDatabase interface
     ~SQLiteDatabase() override = default;
 
     std::vector<int> loadCounters() override;
@@ -32,7 +34,7 @@ private:
 
     QString m_databaseName;
     std::unique_ptr<IDatabaseInitializer> m_initializer;
-    static thread_local std::unique_ptr<ThreadLocalDB> m_threadLocalDB;
+    std::unique_ptr<ThreadLocalDB> m_threadLocalDB;
 };
 
 #endif // SQLITEDATABASE_H

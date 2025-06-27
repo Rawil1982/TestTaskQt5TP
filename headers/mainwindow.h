@@ -11,6 +11,7 @@
 class IDatabase;
 class IWorkerManager;
 class DatabaseWorker;
+class FrequencyUpdater;
 
 namespace Ui {
 class MainWindow;
@@ -20,7 +21,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit MainWindow(std::unique_ptr<IDatabase> database, QWidget *parent = nullptr);
+    explicit MainWindow(std::unique_ptr<IDatabase> database, std::unique_ptr<CounterManager> counterManager, QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
@@ -28,7 +29,6 @@ private slots:
     void addCounter();
     void removeCounter();
     void saveCounters();
-    void updateFrequency();
     
     // События от воркеров
     void onCountersLoaded(const std::vector<int>& counters);
@@ -38,6 +38,7 @@ private slots:
     // События от менеджера воркеров
     void onAllWorkersStarted();
     void onAllWorkersStopped();
+    void updateFrequency();
 
 private:
     // Инициализация
@@ -54,9 +55,10 @@ private:
     Ui::MainWindow *ui;
     
     // Бизнес-логика
-    CounterManager m_counterManager;
-    CountersModel m_countersModel;
-    
+    std::unique_ptr<CounterManager> m_counterManager;
+    std::unique_ptr<CountersModel> m_countersModel;
+    std::unique_ptr<FrequencyUpdater> m_frequencyUpdater;
+
     // Менеджер воркеров
     std::unique_ptr<IWorkerManager> m_workerManager;
     
@@ -67,6 +69,7 @@ private:
     double m_lastFrequency = 0;
     double m_lastTime = 0;
     qint64 m_lastSum = 0;
+
 };
 
 #endif // MAINWINDOW_H

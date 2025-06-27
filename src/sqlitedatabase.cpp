@@ -10,8 +10,6 @@
 #include <sstream>
 #include <iomanip>
 
-thread_local std::unique_ptr<SQLiteDatabase::ThreadLocalDB> SQLiteDatabase::m_threadLocalDB;
-
 SQLiteDatabase::SQLiteDatabase(QString databaseName, 
                                std::unique_ptr<IDatabaseInitializer> initializer)
     : m_databaseName(std::move(databaseName))
@@ -57,7 +55,9 @@ std::vector<int> SQLiteDatabase::loadCounters() {
     }
 
     std::vector<int> counters;
-    QSqlQuery query("SELECT value FROM counters", localDB->db);
+    QSqlQuery query("SELECT value FROM counters", localDB->db);// Можно, конечно, не хардкодить, но так лучше читается.
+                                                               // Если надо, могу переделать.
+                                                               // например добавить IDatabaseCommand и от него сделать селектор, делетер, апдейтер
     while (query.next()) {
         counters.push_back(query.value(0).toInt());
     }

@@ -24,7 +24,9 @@ QVariant CountersModel::headerData(int section, Qt::Orientation orientation, int
     if (role != Qt::DisplayRole || orientation != Qt::Horizontal)
         return QVariant();
 
-    return section == 0 ? tr("Значение") : QVariant();
+    return section == 0 ? tr("Значение") : QVariant(); //Не хочу переносить в отдельную переменную, т. к. так проще читается код
+    // Вообще можно было бы сделать структуру или мап с номером и названием столбцов, но для таблицы из 1 столбца
+    // это излишне
 }
 
 void CountersModel::addCounters(const std::vector<int>& counters) {

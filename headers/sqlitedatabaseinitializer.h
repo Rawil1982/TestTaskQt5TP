@@ -9,8 +9,8 @@
 class SQLiteDatabaseInitializer : public IDatabaseInitializer {
 public:
     SQLiteDatabaseInitializer();
-    ~SQLiteDatabaseInitializer() override = default;
 
+    // IDatabaseInitializer interface
     bool initialize(QSqlDatabase& db, const QString& databaseName) override;
     bool createTables(QSqlDatabase& db) override;
     QString getConnectionName() const override;

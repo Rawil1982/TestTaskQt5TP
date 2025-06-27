@@ -4,12 +4,14 @@
 #include <QObject>
 #include <memory>
 
+// Forward declarations
 class IWorker;
 class IDatabase;
 class CounterManager;
 
 class IWorkerManager : public QObject {
     Q_OBJECT
+
 public:
     explicit IWorkerManager(QObject* parent = nullptr) : QObject(parent) {}
     virtual ~IWorkerManager() = default;

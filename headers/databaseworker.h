@@ -18,12 +18,15 @@ class DatabaseWorker : public IWorker {
 
 public:
     explicit DatabaseWorker(std::unique_ptr<IDatabase> database);
+
+    // IWorker interface
     ~DatabaseWorker() override;
 
     void start() override;
     void stop() override;
     bool isRunning() const override;
-    
+    const char *getWorkerName() const override;
+
     void loadCounters();
     void saveCounters(const std::vector<int>& counters);
 
@@ -41,6 +44,7 @@ private:
     std::mutex m_mutex;
     std::condition_variable m_cv;
     std::queue<std::function<void()>> m_tasks;
+    static constexpr const char* m_workerName = "DatabaseWorker";
 };
 
 #endif // DATABASEWORKER_H

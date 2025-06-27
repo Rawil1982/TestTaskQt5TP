@@ -22,7 +22,6 @@ public:
     
     // Операции со счетчиками
     void incrementAll();
-    void increment(int index);
     
     // Вычисления
     double getSum() const;

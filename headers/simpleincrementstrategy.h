@@ -9,7 +9,6 @@ public:
     SimpleIncrementStrategy() = default;
     ~SimpleIncrementStrategy() override = default;
 
-    void increment(std::vector<int>& counters) override;
     void incrementAll(std::vector<int>& counters) override;
 };
 

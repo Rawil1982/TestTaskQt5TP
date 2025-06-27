@@ -29,6 +29,11 @@ bool IncrementWorker::isRunning() const {
     return m_running;
 }
 
+const char *IncrementWorker::getWorkerName() const
+{
+    return m_workerName;
+}
+
 void IncrementWorker::run() {
     using namespace std::chrono;
 

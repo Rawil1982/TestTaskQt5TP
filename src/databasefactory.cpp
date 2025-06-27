@@ -2,5 +2,5 @@
 #include "headers/sqlitedatabase.h"
 
 std::unique_ptr<IDatabase> DatabaseFactory::createDatabase() {
-    return std::make_unique<SQLiteDatabase>("counters.db");
+    return std::make_unique<SQLiteDatabase>(m_databaseName);
 }

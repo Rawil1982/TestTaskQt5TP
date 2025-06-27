@@ -4,7 +4,6 @@
 
 DatabaseWorker::DatabaseWorker(std::unique_ptr<IDatabase> database)
     : m_database(std::move(database)), m_running(false) {
-    qRegisterMetaType<std::vector<int>>("std::vector<int>");
 }
 
 DatabaseWorker::~DatabaseWorker() {
@@ -37,13 +36,18 @@ bool DatabaseWorker::isRunning() const {
     return m_running;
 }
 
+const char *DatabaseWorker::getWorkerName() const
+{
+    return m_workerName;
+}
+
 void DatabaseWorker::loadCounters() {
     addTask([this]() {
         try {
             auto counters = m_database->loadCounters();
             emit countersLoaded(counters);
         } catch (const std::exception& e) {
-            emit error(QString("Load counters error: %1").arg(e.what()));
+            emit error(tr("Load counters error: %1").arg(e.what()));
         }
     });
 }
@@ -54,7 +58,7 @@ void DatabaseWorker::saveCounters(const std::vector<int>& counters) {
             m_database->saveCounters(counters);
             emit countersSaved();
         } catch (const std::exception& e) {
-            emit error(QString("Save counters error: %1").arg(e.what()));
+            emit error(tr("Save counters error: %1").arg(e.what()));
         }
     });
 }

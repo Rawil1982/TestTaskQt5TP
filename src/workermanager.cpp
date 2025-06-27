@@ -5,8 +5,8 @@
 #include <QDebug>
 
 WorkerManager::WorkerManager(CounterManager& counterManager, 
-                           std::unique_ptr<IDatabase> database,
-                           QObject* parent)
+                             std::unique_ptr<IDatabase> database,
+                             QObject* parent)
     : IWorkerManager(parent)
     , m_counterManager(counterManager)
     , m_database(std::move(database))
@@ -22,24 +22,16 @@ WorkerManager::~WorkerManager() {
 void WorkerManager::setupWorkers() {
     auto dbWorker = std::make_unique<DatabaseWorker>(std::move(m_database));
     m_databaseWorker = dbWorker.get();
-    connectWorkerSignals(m_databaseWorker, "DatabaseWorker");
+    connectWorkerSignals(m_databaseWorker, m_databaseWorker->getWorkerName());
     m_workers.push_back(std::move(dbWorker));
 
     auto incWorker = std::make_unique<IncrementWorker>(m_counterManager);
     m_incrementWorker = incWorker.get();
-    connectWorkerSignals(m_incrementWorker, "IncrementWorker");
+    connectWorkerSignals(m_incrementWorker, m_incrementWorker->getWorkerName());
     m_workers.push_back(std::move(incWorker));
 }
 
 void WorkerManager::connectWorkerSignals(IWorker* worker, const QString& workerName) {
-    connect(worker, &IWorker::started, this, [this, workerName]() {
-        qDebug() << workerName << "started";
-    });
-    
-    connect(worker, &IWorker::stopped, this, [this, workerName]() {
-        qDebug() << workerName << "stopped";
-    });
-    
     connect(worker, &IWorker::error, this, [this, workerName](const QString& error) {
         emit workerError(workerName, error);
     });

@@ -41,7 +41,7 @@ bool SQLiteDatabaseInitializer::createTables(QSqlDatabase& db) {
         qCritical() << QObject::tr("Database not open in thread") << m_connectionName;
         return false;
     }
-
+    // Можно сделать отдельный DatabaseCreator, но, имхо, так проще читать код
     QSqlQuery query(db);
     QString createTable = "CREATE TABLE IF NOT EXISTS counters ("
                           "id INTEGER PRIMARY KEY AUTOINCREMENT, "

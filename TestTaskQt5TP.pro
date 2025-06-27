@@ -23,13 +23,15 @@ SOURCES += \
     src/databaseworker.cpp \
     src/incrementworker.cpp \
     src/mainwindow.cpp \
+    src/metatyperegistrator.cpp \
     src/sqlitedatabase.cpp \
     src/sqlitedatabaseinitializer.cpp \
     src/simpleincrementstrategy.cpp \
     src/workermanager.cpp \
     src/commands/addcommand.cpp \
     src/commands/removecommand.cpp \
-    src/commands/savecommand.cpp
+    src/commands/savecommand.cpp \
+    src/frequencyupdater.cpp
 
 HEADERS += \
     headers/countermanager.h \
@@ -38,6 +40,7 @@ HEADERS += \
     headers/databaseworker.h \
     headers/incrementworker.h \
     headers/mainwindow.h \
+    headers/metatyperegistrator.h \
     headers/simpleincrementstrategy.h \
     headers/sqlitedatabase.h \
     headers/sqlitedatabaseinitializer.h \
@@ -50,7 +53,8 @@ HEADERS += \
     headers/commands/icommand.h \
     headers/commands/addcommand.h \
     headers/commands/removecommand.h \
-    headers/commands/savecommand.h
+    headers/commands/savecommand.h \
+    headers/frequencyupdater.h
 
 FORMS += \
     uis/mainwindow.ui

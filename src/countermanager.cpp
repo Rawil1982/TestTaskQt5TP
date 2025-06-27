@@ -43,13 +43,6 @@ void CounterManager::incrementAll() {
     m_incrementStrategy->incrementAll(m_counters);
 }
 
-void CounterManager::increment(int index) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    validateIndex(index);
-    ensureStrategyExists();
-    m_incrementStrategy->increment(m_counters);
-}
-
 double CounterManager::getSum() const {
     std::lock_guard<std::mutex> lock(m_mutex);
     double sum = 0.0;
